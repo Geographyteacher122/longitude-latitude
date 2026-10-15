@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خطوط الطول ودوائر العرض - الإحداثيات الستة الأساسية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-ivory: #FCF9EA;
+            --orange-primary: #DB9558;
+            --orange-hover: #c88347;
+            --green-sage: #97A87A;
+            --green-light: #A8BBA3;
+            --text-dark: #2c3e50;
+            --shadow-color: rgba(219, 149, 88, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: var(--bg-ivory);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* الخلفية الجسيمات المتحركة */
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* شاشة البداية والنهاية السينمائية */
+        .overlay-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(252, 249, 234, 0.95);
+            backdrop-filter: blur(6px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            text-align: center;
+            padding: 20px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .overlay-card {
+            background: #ffffff;
+            color: var(--text-dark);
+            padding: 40px;
+            border-radius: 28px;
+            box-shadow: 0 20px 50px var(--shadow-color);
+            max-width: 600px;
+            width: 100%;
+            border: 4px solid var(--orange-primary);
+            transform: scale(0.9);
+            animation: cardPopup 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes cardPopup {
+            to { transform: scale(1); }
+        }
+
+        .overlay-card h2 {
+            color: var(--green-sage);
+            font-size: 2.1rem;
+            margin-top: 0;
+            font-weight: 900;
+        }
+
+        .overlay-card p {
+            font-size: 1.15rem;
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .start-btn {
+            background: var(--orange-primary);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(219, 149, 88, 0.4);
+            transition: all 0.25s ease;
+        }
+
+        .start-btn:hover {
+            background: var(--orange-hover);
+            transform: translateY(-3px) scale(1.03);
+        }
+
+        /* الترويسة */
+        header {
+            width: 100%;
+            max-width: 1250px;
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--green-light);
+            border-bottom: 4px solid var(--orange-primary);
+            border-radius: 18px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.45rem;
+            color: #ffffff;
+            font-weight: 900;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .teacher-signature {
+            font-size: 0.92rem;
+            color: #ffffff;
+            font-weight: 700;
+            background: var(--green-sage);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1.5px solid var(--bg-ivory);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .audio-btn {
+            background: #ffffff;
+            border: 2px solid var(--orange-primary);
+            color: var(--orange-primary);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: transform 0.2s;
+        }
+
+        .audio-btn:hover { transform: scale(1.1); }
+
+        .stats-bar {
+            font-size: 1.05rem;
+            font-weight: 800;
+            background: var(--bg-ivory);
+            border: 2px solid var(--orange-primary);
+            padding: 5px 18px;
+            border-radius: 20px;
+            color: var(--text-dark);
+        }
+
+        /* شريط التقدم */
+        .progress-container {
+            width: 100%;
+            max-width: 1250px;
+            height: 10px;
+            background: rgba(151, 168, 122, 0.3);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 1px solid var(--green-sage);
+            z-index: 10;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--green-sage), var(--orange-primary));
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 10px;
+        }
+
+        /* حاوية اللعبة */
+        .game-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            max-width: 1250px;
+            width: 100%;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .cards-column {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 210px;
+        }
+
+        /* بطاقات تفاعلية جذابة */
+        .draggable-card {
+            background: linear-gradient(145deg, var(--green-light), #95ab8f);
+            color: #ffffff;
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1rem;
+            text-align: center;
+            cursor: grab;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.4);
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s, opacity 0.3s;
+            border: 2px solid var(--green-sage);
+            position: relative;
+            touch-action: none;
+        }
+
+        .draggable-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 10px 22px rgba(151, 168, 122, 0.35);
+        }
+
+        .draggable-card:active { cursor: grabbing; }
+
+        .draggable-card.dragging {
+            opacity: 0.85;
+            transform: scale(1.08) rotate(-2deg);
+            box-shadow: 0 15px 35px var(--shadow-color);
+            z-index: 1000 !important;
+            border-color: var(--orange-primary);
+        }
+
+        .draggable-card.placed {
+            opacity: 0.35;
+            cursor: default;
+            pointer-events: none;
+            background: #cbd5e1;
+            border-color: #94a3b8;
+            box-shadow: none;
+            transform: none !important;
+        }
+
+        /* الخريطة الثابتة */
+        .map-container {
+            position: relative;
+            width: 700px;
+            height: 420px;
+            background: #FAF6E9;
+            border: 4px solid var(--orange-primary);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+            z-index: 10;
+        }
+
+        .map-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            pointer-events: none;
+        }
+
+        /* مناطق الإفلات الـ 6 المرقمة بدقة من 1 إلى 6 */
+        .drop-target {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            background: var(--bg-ivory);
+            border: 3px solid var(--orange-primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.25s, border-color 0.25s;
+            z-index: 20;
+            color: var(--text-dark);
+            font-weight: 900;
+            font-size: 0.95rem;
+        }
+
+        .drop-target:hover {
+            transform: translate(-50%, -50%) scale(1.25);
+            background: var(--orange-primary);
+            color: white;
+        }
+
+        .drop-target.near-hint {
+            transform: translate(-50%, -50%) scale(1.35);
+            background: var(--green-sage);
+            border-color: var(--orange-primary);
+            color: white;
+            animation: pulseGlow 0.8s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(151, 168, 122, 0.8); }
+            100% { box-shadow: 0 0 0 14px rgba(151, 168, 122, 0); }
+        }
+
+        .drop-target.correct {
+            background: var(--green-sage) !important;
+            border-color: #fff !important;
+            color: white !important;
+            transform: translate(-50%, -50%) scale(1.15) !important;
+            animation: popSuccess 0.4s ease forwards;
+        }
+
+        @keyframes popSuccess {
+            0% { transform: translate(-50%, -50%) scale(0.8); }
+            50% { transform: translate(-50%, -50%) scale(1.4); }
+            100% { transform: translate(-50%, -50%) scale(1.15); }
+        }
+
+        .drop-target.shake-error {
+            animation: shake 0.4s ease;
+            background: #e74c3c !important;
+            color: white !important;
+            border-color: #c0392b !important;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+            20%, 60% { transform: translate(-50%, -50%) translateX(-6px); }
+            40%, 80% { transform: translate(-50%, -50%) translateX(6px); }
+        }
+
+        .message-box {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--orange-primary);
+            min-height: 35px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .controls {
+            margin-top: 10px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .btn-custom {
+            background: var(--orange-primary);
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(219, 149, 88, 0.3);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn-custom:hover {
+            transform: scale(1.05);
+            background: var(--orange-hover);
+        }
+
+        footer {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #555;
+            text-align: center;
+            border-top: 2px solid rgba(219, 149, 88, 0.3);
+            padding-top: 8px;
+            width: 100%;
+            max-width: 1250px;
+            font-weight: 800;
+            z-index: 10;
+        }
+
+        /* كانفاس الاحتفال بالجسيمات */
+        #confetti-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- كانفاس الجسيمات الخلفية -->
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- شاشة البداية السينمائية -->
+    <div class="overlay-screen" id="start-screen">
+        <div class="overlay-card">
+            <h2>🌍 خطوط الطول ودوائر العرض</h2>
+            <p>قم بتوصيل كل من خطوط الطول ودوائر العرض في مكانها الصحيح على خريطة العالم!</p>
+            <div style="margin-bottom: 25px;" class="teacher-signature">إعداد: أ. عهود العبرية — مدرسة وادي غول للتعليم الأساسي (1-9)</div>
+            <button class="start-btn" onclick="startGame()">ابدأ اللعبة الآن 🚀</button>
+        </div>
+    </div>
+
+    <!-- شاشة النهاية والفوز -->
+    <div class="overlay-screen" id="end-screen" style="display: none; opacity: 0; visibility: hidden;">
+        <div class="overlay-card">
+            <h2>🏆 إنجاز رائع وبطولي!</h2>
+            <p>تهانينا! لقد نجحت في توصيل جميع الإحداثيات الستة في أماكنها الصحيحة على الخريطة.</p>
+            <div style="font-size: 1.6rem; color: var(--orange-primary); font-weight: 900; margin-bottom: 20px;" id="final-score-text">مجموعك: 60 / 60</div>
+            <div style="margin-bottom: 25px;" class="teacher-signature">إعداد: أ. عهود العبرية — مدرسة وادي غول للتعليم الأساسي (1-9)</div>
+            <button class="start-btn" onclick="location.reload()">إعادة اللعب 🔄</button>
+        </div>
+    </div>
+
+    <!-- الترويسة -->
+    <header>
+        <h1>🌐 خطوط الطول ودوائر العرض</h1>
+        <div class="teacher-signature">إعداد: أ. عهود العبرية — مدرسة وادي غول للتعليم الأساسي (1-9)</div>
+        <div class="header-controls">
+            <button class="audio-btn" id="audio-toggle" onclick="toggleAudio()" title="تشغيل/كتم الصوت">🔊</button>
+            <div class="stats-bar">⭐ النقاط: <span id="score">0</span> / 60</div>
+        </div>
+    </header>
+
+    <!-- شريط التقدم التفاعلي -->
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <!-- المحتوى والبطاقات الـ 6 -->
+    <div class="game-wrapper">
+        <!-- عمود البطاقات الأيمن -->
+        <div class="cards-column">
+            <div class="draggable-card" draggable="true" id="card-1" data-id="1">القطب الشمالي</div>
+            <div class="draggable-card" draggable="true" id="card-2" data-id="2">مدار السرطان</div>
+            <div class="draggable-card" draggable="true" id="card-3" data-id="3">خط غرينتش</div>
+        </div>
+
+        <!-- خريطة العالم الثابتة -->
+        <div class="map-container" id="map-box">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Equirectangular_projection_SW.jpg" alt="خريطة العالم">
+            
+            <!-- مناطق الإفلات المرقمة بدقة من 1 إلى 6 -->
+            <!-- 1: القطب الشمالي (في الأعلى على نفس خط غرينتش) -->
+            <div class="drop-target" style="top: 12%; left: 50.5%;" data-id="1" ondragover="allowDrop(event)" ondragleave="removeHint(event)" ondrop="drop(event)">1</div>
+            
+            <!-- 2: مدار السرطان (على اليمين) -->
+            <div class="drop-target" style="top: 31%; left: 78%;" data-id="2" ondragover="allowDrop(event)" ondragleave="removeHint(event)" ondrop="drop(event)">2</div>
+            
+            <!-- 3: خط غرينتش (في المنتصف - خط الطول المار بالجزائر) -->
+            <div class="drop-target" style="top: 42%; left: 50.5%;" data-id="3" ondragover="allowDrop(event)" ondragleave="removeHint(event)" ondrop="drop(event)">3</div>
+            
+            <!-- 4: دائرة الاستواء (على اليمين) -->
+            <div class="drop-target" style="top: 50%; left: 78%;" data-id="4" ondragover="allowDrop(event)" ondragleave="removeHint(event)" ondrop="drop(event)">4</div>
+            
+            <!-- 5: مدار الجدي (على اليمين) -->
+            <div class="drop-target" style="top: 69%; left: 78%;" data-id="5" ondragover="allowDrop(event)" ondragleave="removeHint(event)" ondrop="drop(event)">5</div>
+            
+            <!-- 6: القطب الجنوبي (في الأسفل على نفس خط غرينتش) -->
+            <div class="drop-target" style="top: 88%; left: 50.5%;" data-id="6" ondragover="allowDrop(event)" ondragleave="removeHint(event)" ondrop="drop(event)">6</div>
+        </div>
+
+        <!-- عمود البطاقات الأيسر -->
+        <div class="cards-column">
+            <div class="draggable-card" draggable="true" id="card-4" data-id="4">دائرة الاستواء</div>
+            <div class="draggable-card" draggable="true" id="card-5" data-id="5">مدار الجدي</div>
+            <div class="draggable-card" draggable="true" id="card-6" data-id="6">القطب الجنوبي</div>
+        </div>
+    </div>
+
+    <div class="message-box" id="msg">قم بسحب وإفلات كل عنصر في مكانه الصحيح على الخريطة.</div>
+
+    <div class="controls">
+        <button class="btn-custom" onclick="location.reload()">إعادة اللعب 🔄</button>
+    </div>
+
+    <!-- التوقيع أسفل الشاشة -->
+    <footer>
+        إعداد: أ. عهود العبرية — مدرسة وادي غول للتعليم الأساسي (1-9)
+    </footer>
+
+    <script>
+        // --- 1. التحكم بالصوت والأداء ---
+        let audioEnabled = true;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            document.getElementById('audio-toggle').innerText = audioEnabled ? '🔊' : '🔇';
+        }
+
+        function playSound(type) {
+            if (!audioEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(160, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                }
+            } catch(e) {}
+        }
+
+        function startGame() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const startScreen = document.getElementById('start-screen');
+            startScreen.style.opacity = '0';
+            setTimeout(() => { startScreen.style.display = 'none'; }, 400);
+        }
+
+        // --- 2. خلفية الجسيمات المتحركة الهادئة ---
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let bgParticles = [];
+
+        function resizeBgCanvas() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeBgCanvas);
+        resizeBgCanvas();
+
+        for(let i=0; i<30; i++) {
+            bgParticles.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                r: Math.random() * 2.5 + 1,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3,
+                alpha: Math.random() * 0.3 + 0.1
+            });
+        }
+
+        function renderBgParticles() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            bgCtx.fillStyle = '#97A87A';
+            bgParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if(p.x < 0) p.x = bgCanvas.width;
+                if(p.x > bgCanvas.width) p.x = 0;
+                if(p.y < 0) p.y = bgCanvas.height;
+                if(p.y > bgCanvas.height) p.y = 0;
+
+                bgCtx.globalAlpha = p.alpha;
+                bgCtx.beginPath();
+                bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                bgCtx.fill();
+            });
+            requestAnimationFrame(renderBgParticles);
+        }
+        renderBgParticles();
+
+        // --- 3. نظام السحب والإفلات التفاعلي واللمس ---
+        let score = 0;
+        let placedCount = 0;
+        const totalItems = 6;
+
+        const cards = document.querySelectorAll('.draggable-card');
+        const dropTargets = document.querySelectorAll('.drop-target');
+
+        let draggedCardId = null;
+        let activeClone = null;
+
+        cards.forEach(card => {
+            // كمبيوتر (Drag & Drop)
+            card.addEventListener('dragstart', (e) => {
+                draggedCardId = card.dataset.id;
+                card.classList.add('dragging');
+                e.dataTransfer.setData("text", card.id);
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                clearHints();
+            });
+
+            // تابلت وهواتف ذكية (Touch Events)
+            card.addEventListener('touchstart', (e) => {
+                if (card.classList.contains('placed')) return;
+                draggedCardId = card.dataset.id;
+                card.classList.add('dragging');
+
+                const touch = e.touches[0];
+                activeClone = card.cloneNode(true);
+                activeClone.style.position = 'fixed';
+                activeClone.style.zIndex = '2000';
+                activeClone.style.opacity = '0.9';
+                activeClone.style.pointerEvents = 'none';
+                activeClone.style.transform = 'scale(1.05) rotate(-2deg)';
+                document.body.appendChild(activeClone);
+                moveClone(touch.clientX, touch.clientY, activeClone);
+                e.preventDefault();
+            }, {passive: false});
+
+            card.addEventListener('touchmove', (e) => {
+                if (!activeClone) return;
+                const touch = e.touches[0];
+                moveClone(touch.clientX, touch.clientY, activeClone);
+
+                dropTargets.forEach(target => {
+                    const rect = target.getBoundingClientRect();
+                    if (
+                        touch.clientX >= rect.left - 25 && touch.clientX <= rect.right + 25 &&
+                        touch.clientY >= rect.top - 25 && touch.clientY <= rect.bottom + 25
+                    ) {
+                        target.classList.add('near-hint');
+                    } else {
+                        target.classList.remove('near-hint');
+                    }
+                });
+                e.preventDefault();
+            }, {passive: false});
+
+            card.addEventListener('touchend', (e) => {
+                if (!activeClone) return;
+                const touch = e.changedTouches[0];
+                activeClone.remove();
+                activeClone = null;
+
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                const target = elementBelow ? elementBelow.closest('.drop-target') : null;
+
+                card.classList.remove('dragging');
+                clearHints();
+
+                if (target) {
+                    processDrop(draggedCardId, card.id, target);
+                }
+            });
+        });
+
+        function moveClone(x, y, clone) {
+            clone.style.left = (x - clone.offsetWidth / 2) + 'px';
+            clone.style.top = (y - clone.offsetHeight / 2) + 'px';
+        }
+
+        function clearHints() {
+            dropTargets.forEach(t => t.classList.remove('near-hint'));
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('near-hint');
+        }
+
+        function removeHint(ev) {
+            ev.currentTarget.classList.remove('near-hint');
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const cardElemId = ev.dataTransfer.getData("text");
+            const cardElem = document.getElementById(cardElemId);
+            clearHints();
+            if (cardElem) {
+                processDrop(cardElem.dataset.id, cardElemId, ev.currentTarget);
+            }
+        }
+
+        function processDrop(cardIdNum, cardElemId, targetElem) {
+            if (!targetElem.classList.contains('drop-target')) return;
+            const targetIdNum = targetElem.dataset.id;
+
+            if (cardIdNum === targetIdNum) {
+                playSound('success');
+                targetElem.innerHTML = "✔";
+                targetElem.classList.add("correct");
+
+                const cardElement = document.getElementById(cardElemId);
+                if (cardElement) cardElement.classList.add("placed");
+
+                score += 10;
+                placedCount++;
+                document.getElementById("score").innerText = score;
+                
+                const progressPct = (placedCount / totalItems) * 100;
+                document.getElementById("progress-bar").style.width = progressPct + '%';
+
+                triggerConfettiAt(targetElem);
+
+                if (placedCount === totalItems) {
+                    document.getElementById("msg").innerText = "🏆 ممتاز جداً! أداء بطولي وموقع علمي دقيق للإحداثيات!";
+                    document.getElementById('final-score-text').innerText = `مجموعك: ${score} / 60`;
+                    setTimeout(() => {
+                        document.getElementById('end-screen').style.display = 'flex';
+                        document.getElementById('end-screen').style.opacity = '1';
+                        document.getElementById('end-screen').style.visibility = 'visible';
+                    }, 800);
+                } else {
+                    document.getElementById("msg").innerText = "إجابة صحيحة! قم بتوصيل العنصر التالي.";
+                }
+            } else {
+                playSound('error');
+                targetElem.classList.add("shake-error");
+                document.getElementById("msg").innerText = "محاولة خاطئة! حاول مرة أخرى في المكان الصحيح.";
+                setTimeout(() => {
+                    targetElem.classList.remove("shake-error");
+                }, 500);
+            }
+        }
+
+        // --- 4. نظام الجسيمات الاحتفالية (Confetti) ---
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        let confettis = [];
+
+        function resizeConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeConfetti);
+        resizeConfetti();
+
+        function triggerConfettiAt(elem) {
+            const rect = elem.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            for(let i=0; i<25; i++) {
+                confettis.push({
+                    x: cx, y: cy,
+                    vx: (Math.random() - 0.5) * 7,
+                    vy: (Math.random() - 0.5) * 7 - 2,
+                    color: ['#DB9558', '#97A87A', '#A8BBA3', '#2c3e50'][Math.floor(Math.random()*4)],
+                    size: Math.random() * 5 + 3,
+                    life: 1
+                });
+            }
+        }
+
+        function renderConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettis.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.15;
+                p.life -= 0.02;
+
+                if (p.life <= 0) {
+                    confettis.splice(idx, 1);
+                } else {
+                    confettiCtx.globalAlpha = p.life;
+                    confettiCtx.fillStyle = p.color;
+                    confettiCtx.beginPath();
+                    confettiCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    confettiCtx.fill();
+                }
+            });
+            requestAnimationFrame(renderConfetti);
+        }
+        renderConfetti();
+    </script>
+</body>
+</html>
