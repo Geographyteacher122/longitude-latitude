@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head>
+<head><script>/* سندباد عُمان الصغير: تسجيل إنهاء اللعبة لمرفأ السفينة */function __sbDone(){var r='';try{r=(location.pathname.split('/')[1]||'').toLowerCase().replace(/\.+$/,'');var c=null;try{c=JSON.parse(localStorage.getItem('sindbad-current')||'null')}catch(e){}var w=(c&&c.name)||'';var d={};try{d=JSON.parse(localStorage.getItem('sindbad-done')||'{}')||{}}catch(e){}(d[w]=d[w]||{})[r]=Date.now();localStorage.setItem('sindbad-done',JSON.stringify(d))}catch(e){}try{if(window.parent&&window.parent!==window)window.parent.postMessage({sindbadDone:r},'*')}catch(e){}}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#23303A">
@@ -590,7 +590,7 @@ async function correct(q,after,wait){
 }
 function finish(){phase='end';locked=true;clearTemp();fit();hud();sfx.fan();setTimeout(()=>{confettiBurst(innerWidth/2,innerHeight/3,140);showEnd()},1500)}
 function grade(){const r=stars/MAXS();return r>=.85?['مستكشف بارع','🏅']:r>=.65?['مستكشف متمكّن','🥈']:r>=.4?['مستكشف مجتهد','🥉']:['بداية موفّقة، أعد المحاولة لتجمع نجومًا أكثر','🌱']}
-function showEnd(){
+function showEnd(){__sbDone();
   const e=$('end');e.classList.remove('hidden');const [g,ic]=grade();
   $('endCard').innerHTML=`<h2>${ic} أحسنت!</h2><p style="margin:2px 0;font-weight:700;font-size:18px">${g}</p>
   <div class="res"><div><b>${AR(stars)}/${AR(MAXS())}</b><span>النجوم</span></div><div><b>${AR(score)}</b><span>النقاط</span></div></div>
